@@ -5,6 +5,7 @@ using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Management;
 using System.Net;
 using System.Net.Sockets;
 using System.ServiceProcess;
@@ -23,10 +24,19 @@ namespace PP_Service
         private string PowerpointPath;
         private PowerPointComFunctions PP;
         public System.Diagnostics.EventLog eventLog1;
+        private bool SerialChecked = false;
 
         public PP_Service()
         {
             InitializeComponent();
+
+
+            //check for motherboard serial
+            //wmic baseboard get product,Manufacturer,version,serialnumber
+            if (getMotherBoardSerial()=="PDWkuh21W5E6SX")
+            {
+                SerialChecked = true;
+            }
             eventLog1 = new System.Diagnostics.EventLog();
             if (!System.Diagnostics.EventLog.SourceExists("MySource"))
             {
@@ -37,13 +47,42 @@ namespace PP_Service
             eventLog1.Log = "MyNewLog";
         }
 
+        static String getMotherBoardSerial()
+        {
+            String serial = "";
+            try
+            {
+                ManagementObjectSearcher mos = new ManagementObjectSearcher("SELECT SerialNumber FROM Win32_BaseBoard");
+                ManagementObjectCollection moc = mos.Get();
+
+                foreach (ManagementObject mo in moc)
+                {
+                    serial = mo["SerialNumber"].ToString();
+                }
+                return serial;
+            }
+            catch (Exception)
+            {
+                return serial;
+            }
+        }
+
         protected override void OnStart(string[] args)
         {
-            PowerpointPath = "c:\\temp";
-            tcpListener = new TcpListener(IPAddress.Any, 3001);
-            listenThread = new Thread(new ThreadStart(ListenForClients));
-            listenThread.Start();
-            eventLog1.WriteEntry("Starting Listening Service");
+            if (SerialChecked)
+            {
+                PowerpointPath = "c:\\temp";
+                tcpListener = new TcpListener(IPAddress.Any, 3001);
+                listenThread = new Thread(new ThreadStart(ListenForClients));
+                listenThread.Start();
+                eventLog1.WriteEntry("Starting Listening Service");
+            }
+            else
+            {
+                eventLog1.WriteEntry("License of [" + getMotherBoardSerial() + "] has not been registered yet");
+                Console.WriteLine("Your serial has not been registered yet, please purchase a license.");
+            }
+
         }
 
         protected override void OnStop()
