@@ -38,13 +38,13 @@ namespace PP_Service
                 SerialChecked = true;
             }
             eventLog1 = new System.Diagnostics.EventLog();
-            if (!System.Diagnostics.EventLog.SourceExists("MySource"))
+            if (!System.Diagnostics.EventLog.SourceExists("AMX PP Service"))
             {
                 System.Diagnostics.EventLog.CreateEventSource(
-                    "MySource", "MyNewLog");
+                    "AMX PP Service", "AMX PP Service Log");
             }
-            eventLog1.Source = "MySource";
-            eventLog1.Log = "MyNewLog";
+            eventLog1.Source = "AMX PP Service";
+            eventLog1.Log = "AMX PP Service Log";
         }
 
         static String getMotherBoardSerial()
@@ -71,6 +71,7 @@ namespace PP_Service
         {
             if (SerialChecked)
             {
+                eventLog1.WriteEntry("License has been registered, starting service");
                 PowerpointPath = "c:\\temp";
                 tcpListener = new TcpListener(IPAddress.Any, 3001);
                 listenThread = new Thread(new ThreadStart(ListenForClients));
